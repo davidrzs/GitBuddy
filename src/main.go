@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -20,10 +19,15 @@ var (
 	commit        = app.Command("commit", "Commit changes")
 	commitMessage = commit.Arg("message", "The message for this commit.").Required().String()
 
-	post        = app.Command("post", "Post a message to a channel.")
-	postImage   = post.Flag("image", "Image to post.").File()
-	postChannel = post.Arg("channel", "Channel to post to.").Required().String()
-	postText    = post.Arg("text", "Text to post.").Strings()
+	cm        = app.Command("cm", "Commit changes")
+	cmMessage = cm.Arg("message", "The message for this commit.").Required().String()
+
+	/*
+		post        = app.Command("post", "Post a message to a channel.")
+		postImage   = post.Flag("image", "Image to post.").File()
+		postChannel = post.Arg("channel", "Channel to post to.").Required().String()
+		postText    = post.Arg("text", "Text to post.").Strings()
+	*/
 )
 
 func main() {
@@ -31,24 +35,26 @@ func main() {
 
 	// stage changes
 	case stage.FullCommand():
-		suc := StageChanges()
-		if suc != true {
-			fmt.Println("asd")
-		}
+		StageChanges()
 
 	case st.FullCommand():
 		StageChanges()
 
 	// commit
 	case commit.FullCommand():
-		fmt.Println(*commitMessage)
+		CommitWithMessage(*commitMessage)
 
-	case post.FullCommand():
+	case cm.FullCommand():
+		CommitWithMessage(*cmMessage)
+
+		/*case post.FullCommand():
 		if *postImage != nil {
 		}
 		text := strings.Join(*postText, " ")
 		println("Post:", text)
+		*/
 	}
+
 }
 
 func mainW() {
@@ -73,7 +79,7 @@ func StageChanges() bool {
 	success := false
 	var err error
 
-	cmdArgs := []string{"add ."}
+	cmdArgs := []string{"add", "."}
 	if _, err = exec.Command("git", cmdArgs...).Output(); err != nil {
 		fmt.Fprintln(os.Stderr, "There was an error staging all changes", err)
 		return success
@@ -98,14 +104,15 @@ func PushRepo() bool {
 }
 
 // CommitWithMessage commits staged changes with a message.
-func CommitWithMessage() bool {
+func CommitWithMessage(message string) bool {
 	// var cmdOut []byte
 	success := false
-	var err error
 
-	cmdArgs := []string{"push"}
-	if _, err = exec.Command("git", cmdArgs...).Output(); err != nil {
-		fmt.Fprintln(os.Stderr, "There was an error staging all changes", err)
+	cmdArgs := []string{"commit", "-am", message}
+
+	if outp, err := exec.Command("git", cmdArgs...).Output(); err != nil {
+		fmt.Fprintln(os.Stderr, "There was an error commiting your changes", err)
+		fmt.Println(outp)
 		return success
 	}
 	success = true
